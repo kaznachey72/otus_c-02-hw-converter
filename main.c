@@ -10,7 +10,7 @@ int main(int argc, char **argv)
 
     encode_t type = get_encode_type(argv[2]);
     if (type == NONE) {
-        printf("valid encode types: CP151, ISO, KOI8\n");
+        printf("valid encode types: CP1251, ISO, KOI8\n");
         return 1;
     }
 
