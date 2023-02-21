@@ -5,60 +5,50 @@
 
 const uint8_t UNKNOWN_SYM = 0x3F; // '?'
 
-symbol_t get_table_code(int index, encode_t type)
+uint32_t get_utf_data(uint8_t src, encode_t type)
 {
     switch (type) {
-        case CP1251: return table_cp1251[index];
-        case KOI8:   return table_koi8[index];
-        case ISO:    return table_iso[index];
-        default:     abort();
+        case CP1251: return (src < 128) ? src : table_cp1251[src-128];
+        case KOI8:   return (src < 128) ? src : table_koi8[src-128];
+        case ISO:    return (src < 128) ? src : table_iso[src-128];
+        default:     return UNKNOWN_SYM;
     }
 }
 
-int get_table_size(encode_t type)
+uint8_t len(uint32_t data)
 {
-    switch (type) {
-        case CP1251: return (sizeof(table_cp1251) / sizeof(table_cp1251[0]));
-        case KOI8:   return (sizeof(table_koi8) / sizeof(table_koi8[0]));
-        case ISO:    return (sizeof(table_iso) / sizeof(table_iso[0]));
-        default:     return 0;
-    }  
+    if      ((data >>  8) == 0)  return 1;
+    else if ((data >> 16) == 0)  return 2;
+    else if ((data >> 24) == 0)  return 3;
+    else                         return 4;
 }
 
-uint16_t binary_search(uint8_t src, encode_t type)
+uint32_t swap(uint32_t data) 
 {
-    int lo = 0;
-    int hi = get_table_size(type) - 1;
-    while (lo <= hi) {
-        size_t mi = (lo + hi) / 2;
-        uint8_t mi_code = get_table_code(mi, type).src;
-        if (src < mi_code) {
-            hi = mi - 1;
-        }
-        else if (src > mi_code) {
-            lo = mi + 1;
-        }
-        else {
-            return get_table_code(mi, type).dst;
-        }
+    uint32_t f1 = (data >> 24 & 0xff);
+    uint32_t f2 = (data >> 16 & 0xff);
+    uint32_t f3 = (data >> 8  & 0xff);
+    uint32_t f4 = (data       & 0xff);
+    return (f4 << 24) | (f3 << 16) | (f2 << 8) | f1;
+}
+
+uint32_t shift(uint32_t data, uint8_t len)
+{
+    for (uint8_t i=sizeof(data); i!=len; --i) {
+        data = (data >> 8);
     }
-    return UNKNOWN_SYM;
+    return data;
 }
 
-uint16_t swap(uint16_t bytes)
+utf8_t encode(uint8_t src, encode_t type)
 {
-    uint16_t hi = (bytes & 0xff00);
-    uint16_t lo = (bytes & 0x00ff);
-    return (lo << 8) | (hi >> 8);
-}
+    uint32_t utf_data = get_utf_data(src, type);
+    uint8_t utf_len = len(utf_data);
 
-uint16_t encode(uint8_t src, encode_t type)
-{
-    if (src < 128) {
-        return src;
-    }
-
-    uint16_t dst= binary_search(src, type);
-    return swap(dst);
+    utf_data = swap(utf_data);
+    utf_data = shift(utf_data, utf_len);
+    
+    utf8_t dst = {utf_data, utf_len};
+    return dst;
 }
 

@@ -10,6 +10,11 @@ typedef enum {
     ISO,
 } encode_t;
 
-uint16_t encode(uint8_t src, encode_t type);
+typedef struct {
+    uint32_t data;
+    uint8_t  len;
+} utf8_t;
+
+utf8_t encode(uint8_t src, encode_t type);
 
 #endif

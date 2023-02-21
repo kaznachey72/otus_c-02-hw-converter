@@ -22,7 +22,7 @@ void convert(FILE *fi, FILE *fo, encode_t type)
 {
     int src;
     while ((src = fgetc(fi)) != EOF) {
-        uint16_t dst = encode(src, type);
-        fwrite(&dst, 1, sizeof(dst), fo);
+        utf8_t dst = encode(src, type);
+        fwrite(&dst.data, 1, dst.len, fo);
     }
 }
